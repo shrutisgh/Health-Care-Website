@@ -2,39 +2,41 @@
  * Created by Tomasz Gabrysiak @ Infermedica on 08/02/2017.
  */
 
-import _ from 'lodash';
 import html from '../../templates/helpers';
 
-const symptomHtmlMapper = (suggestedSymptoms) => {
-  return _.take(suggestedSymptoms, 5).map((symptom) => {
-    return html`
-      <div class="custom-control custom-checkbox">
-        <input id="${symptom.id}" type="checkbox" class="input-symptom custom-control-input">
-        <label for="${symptom.id}" class="custom-control-label custom-checkbox mb-2 mr-sm-2 mb-sm-0">
-          ${symptom.name}
-        </label>
+const conditionsHtmlMapper = (conditions) => {
+  return conditions.map((condition) => `
+    <div class="summary-item row">
+      <div class="col-8">
+        ${condition.name}
+        ${condition.probability >= 0.2
+    ? `<i class="fa fa-fw fa-eye"></i><a href data-id="${condition.id}" class="explain">explain</a>` : ''}
       </div>
-    `;
-  });
+      <div class="col-4">
+        <div class="progress">
+          <div class="progress-bar bg-info" role="progressbar" 
+              style="width: ${Math.floor(condition.probability * 100)}%">
+            ${Math.floor(condition.probability * 100)}%
+          </div>
+        </div>
+      </div>
+      <div class="explanation col-12"></div>
+    </div>          
+  `);
 };
 
 const template = (context) => {
-  return context.api.getSuggestedSymptoms(context.data).then((suggestedSymptoms) => {
-    if (!suggestedSymptoms.length) {
-      document.getElementById('next-step').click();
-      return '<p><i class="fa fa-circle-o-notch fa-spin fa-fw"></i> I am thinking...</p>';
-    }
+  return context.api.diagnosis(context.patient.toDiagnosis()).then((data) => {
     return html`
-      <h5 class="card-title">Do you have any of the following symptoms?</h5>
+      <h5 class="card-title">Summary</h5>
       <div class="card-text">
-        <form>
-          ${symptomHtmlMapper(suggestedSymptoms)}
-        </form>
-        <p class="text-muted small">
+        <p>Based on the interview, you could suffer from:</p>
+        ${conditionsHtmlMapper(data.conditions)}
+        <div class="alert alert-warning" role="alert">
           <i class="fa fa-info-circle"></i>
-          This is a list of symptoms suggested by our AI,
-          based on the information gathered so far during the interview.
-        </p>
+          Please note that the list below may not be complete and is provided solely for informational purposes 
+          and is not a qualified medical opinion.
+        </div>
       </div>
     `;
   });
