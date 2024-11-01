@@ -5,35 +5,10 @@
 import View from '../../base/view';
 import template from './template';
 
-function addPostmenopause(riskFactors) {
-  riskFactors.push('p_11');
-}
-
-function addPregnancy(riskFactors) {
-  riskFactors.push('p_42');
-}
-
-function addDiabetes(riskFactors) {
-  riskFactors.push('p_8');
-}
-
-export default class CommonRisksView extends View {
+export default class GeoRisksView extends View {
   constructor(el, context) {
-    const {age} = context.patient;
-    // ids of common risk factors like hypertension or high cholesterol
-    context.commonRiskFactors = ['p_7', 'p_28', 'p_10', 'p_9', 'p_264'];
-
-    if (context.patient.sex === 'female') {
-      if (age.value > 45) {
-        addPostmenopause(context.commonRiskFactors);
-      } else if (age >= 15) {
-        addPregnancy(context.commonRiskFactors);
-      }
-    }
-
-    if (age.value > 49) {
-      addDiabetes(context.commonRiskFactors);
-    }
+    // below are ids of risk factors related with geographical location
+    context.locationRiskFactors = ['p_15', 'p_20', 'p_21', 'p_16', 'p_17', 'p_18', 'p_14', 'p_19', 'p_22', 'p_13'];
 
     const handleRisksChange = (e) => {
       const group = {};
