@@ -2,29 +2,80 @@
  * Created by Tomasz Gabrysiak @ Infermedica on 08/02/2017.
  */
 
+import _ from 'lodash';
+
 import View from '../../base/view';
 import template from './template';
 
-export default class GeoRisksView extends View {
+export default class NLPView extends View {
   constructor(el, context) {
-    // below are ids of risk factors related with geographical location
-    context.locationRiskFactors = ['p_15', 'p_20', 'p_21', 'p_16', 'p_17', 'p_18', 'p_14', 'p_19', 'p_22', 'p_13'];
-
-    const handleRisksChange = (e) => {
-      const group = {};
-      this.el.querySelectorAll('.input-risk').forEach((item) => {
-        group[item.id] = {reported: item.checked};
-      });
-      this.context.patient.addSymptomsGroup(group);
+    const handleFeelChange = (e) => {
+      const feel = e.target.value;
+      if (feel) {
+        this.context.api.parse(this.context.patient.toParse(feel)).then((response) => {
+          return this.updateObservations(response.mentions);
+        });
+      }
     };
 
     const binds = {
-      '.input-risk': {
-        type: 'change',
-        listener: handleRisksChange
+      '#input-feel': {
+        type: 'input',
+        listener: _.debounce(handleFeelChange, 400)
       }
     };
 
     super(el, template, context, binds);
+    this.observations = {};
+  }
+
+  updateObservations(observations) {
+    this.observations = observations;
+    let t = '';
+    for (const o of observations) {
+      t += `
+        <li>
+          <i class="text-${o.choice_id === 'present' ? 'success' : 'danger'} 
+            fa fa-fw fa-${o.choice_id === 'present' ? 'plus' : 'minus'}-circle"></i>
+          ${o.name}
+        </li>
+      `;
+    }
+    this.el.querySelector('#observations').innerHTML = t;
+    this.checkObservations();
+  }
+
+  checkObservations() {
+    const present = (element) => element.choice_id === 'present';
+    if (this.observations.some(present)) {
+      document.getElementById('next-step').removeAttribute('disabled');
+    } else {
+      document.getElementById('next-step').setAttribute('disabled', 'true');
+    }
+  }
+
+  saveObservations() {
+    if (_.isEmpty(this.observations)) {
+      return;
+    }
+    const pairs = this.observations.map((item) => {
+      const val = {
+        reported: item.choice_id === 'present'
+      };
+
+      if (val.reported) {
+        Object.assign(val, {
+          source: 'initial'
+        });
+      }
+      return [item.id, val];
+    });
+    const o = _.fromPairs(pairs);
+    this.context.patient.addSymptomsGroup(o);
+  }
+
+  destroy() {
+    this.saveObservations();
+    super.destroy();
   }
 }
