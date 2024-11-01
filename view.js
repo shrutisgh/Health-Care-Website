@@ -1,45 +1,39 @@
 /**
- * Created by Tomasz Gabrysiak @ Infermedica on 06/02/2017.
+ * Created by Tomasz Gabrysiak @ Infermedica on 08/02/2017.
  */
 
-export default class View {
-  constructor(el, template, context, binds) {
-    this.el = el;
-    this.template = template;
-    this.context = context;
-    this.binds = binds;
-  }
+import View from '../../base/view';
+import template from './template';
 
-  render() {
-    this.el.innerHTML = '<p><i class="fa fa-circle-o-notch fa-spin fa-fw"></i> Loading...</p>';
-    return this.template(this.context).then((html) => {
-      this.el.innerHTML = html;
-      return this.bindEvents();
-    });
-  }
+export default class BasicView extends View {
+  constructor(el, context) {
+    const handleSexChange = (e) => {
+      this.context.patient.setSex(e.target.value);
+    };
 
-  destroy() {
-    this.unbindEvents();
-    this.el.innerHTML = '';
-  }
+    const handleAgeChange = (e) => {
+      this.context.patient.setAge(e.target.valueAsNumber);
+      if (e.target.valueAsNumber < 0 || e.target.valueAsNumber > 130) {
+        document.getElementById('next-step').setAttribute('disabled', 'true');
+        document.getElementById('age-validation').removeAttribute('hidden');
+      } else {
+        document.getElementById('next-step').removeAttribute('disabled');
+        document.getElementById('age-validation').setAttribute('hidden', 'true');
+      }
+    };
 
-  bindEvents() {
-    if (this.binds) {
-      Object.keys(this.binds).forEach((key) => {
-        this.el.querySelectorAll(key).forEach((item) => {
-          item.addEventListener(this.binds[key].type, this.binds[key].listener);
-        });
-      });
-    }
-  }
+    const binds = {
+      '.input-sex': {
+        type: 'change',
+        listener: handleSexChange
+      },
+      '#input-age': {
+        type: 'change',
+        listener: handleAgeChange
+      }
+    };
 
-  unbindEvents() {
-    if (this.binds) {
-      Object.keys(this.binds).forEach((key) => {
-        this.el.querySelectorAll(key).forEach((item) => {
-          item.removeEventListener(this.binds[key].type, this.binds[key].listener);
-        });
-      });
-    }
+    super(el, template, context, binds);
+    this.context.patient.reset();
   }
 }
