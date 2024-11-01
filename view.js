@@ -5,35 +5,51 @@
 import View from '../../base/view';
 import template from './template';
 
-export default class BasicView extends View {
-  constructor(el, context) {
-    const handleSexChange = (e) => {
-      this.context.patient.setSex(e.target.value);
-    };
+function addPostmenopause(riskFactors) {
+  riskFactors.push('p_11');
+}
 
-    const handleAgeChange = (e) => {
-      this.context.patient.setAge(e.target.valueAsNumber);
-      if (e.target.valueAsNumber < 0 || e.target.valueAsNumber > 130) {
-        document.getElementById('next-step').setAttribute('disabled', 'true');
-        document.getElementById('age-validation').removeAttribute('hidden');
-      } else {
-        document.getElementById('next-step').removeAttribute('disabled');
-        document.getElementById('age-validation').setAttribute('hidden', 'true');
+function addPregnancy(riskFactors) {
+  riskFactors.push('p_42');
+}
+
+function addDiabetes(riskFactors) {
+  riskFactors.push('p_8');
+}
+
+export default class CommonRisksView extends View {
+  constructor(el, context) {
+    const {age} = context.patient;
+    // ids of common risk factors like hypertension or high cholesterol
+    context.commonRiskFactors = ['p_7', 'p_28', 'p_10', 'p_9', 'p_264'];
+
+    if (context.patient.sex === 'female') {
+      if (age.value > 45) {
+        addPostmenopause(context.commonRiskFactors);
+      } else if (age >= 15) {
+        addPregnancy(context.commonRiskFactors);
       }
+    }
+
+    if (age.value > 49) {
+      addDiabetes(context.commonRiskFactors);
+    }
+
+    const handleRisksChange = (e) => {
+      const group = {};
+      this.el.querySelectorAll('.input-risk').forEach((item) => {
+        group[item.id] = {reported: item.checked};
+      });
+      this.context.patient.addSymptomsGroup(group);
     };
 
     const binds = {
-      '.input-sex': {
+      '.input-risk': {
         type: 'change',
-        listener: handleSexChange
-      },
-      '#input-age': {
-        type: 'change',
-        listener: handleAgeChange
+        listener: handleRisksChange
       }
     };
 
     super(el, template, context, binds);
-    this.context.patient.reset();
   }
 }
